@@ -12,6 +12,9 @@ import
   ../spec/datatypes/base,
   ../consensus_object_pools/[blockchain_dag, block_quarantine, attestation_pool]
 
+  # not ideal
+  ../eth1/eth1_monitor
+
 # TODO: Move to "consensus_object_pools" folder
 
 type
@@ -28,6 +31,10 @@ type
     # ----------------------------------------------------------------
     quarantine*: ref Quarantine
 
+    # Eth1 integration for merge
+    # ----------------------------------------------------------------
+    web3Provider*: Web3DataProviderRef
+
 # Initialization
 # ------------------------------------------------------------------------------
 
@@ -35,11 +42,13 @@ proc new*(T: type ConsensusManager,
           dag: ChainDAGRef,
           attestationPool: ref AttestationPool,
           quarantine: ref Quarantine
+          web3Provider: Web3DataProviderRef
          ): ref ConsensusManager =
   (ref ConsensusManager)(
     dag: dag,
     attestationPool: attestationPool,
-    quarantine: quarantine
+    quarantine: quarantine,
+    web3Provider: web3Provider
   )
 
 # Consensus Management
