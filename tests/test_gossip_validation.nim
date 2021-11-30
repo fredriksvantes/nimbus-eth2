@@ -79,7 +79,8 @@ suite "Gossip validation " & preset():
           blckRef: BlockRef, signedBlock: phase0.TrustedSignedBeaconBlock,
           epochRef: EpochRef):
         # Callback add to fork choice if valid
-        pool[].addForkChoice(epochRef, blckRef, signedBlock.message, blckRef.slot)
+        pool[].addForkChoice(
+          epochRef, blckRef, signedBlock.message, blckRef.slot.toBeaconTime)
 
       check: added.isOk()
       dag.updateHead(added[], quarantine[])

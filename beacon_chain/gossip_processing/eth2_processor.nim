@@ -254,8 +254,8 @@ proc attestationValidator*(
     attestation: Attestation,
     subnet_id: SubnetId,
     checkSignature: bool = true): Future[ValidationRes] {.async.} =
-  let wallTime = self.getCurrentBeaconTime()
-  var (afterGenesis, wallSlot) = wallTime.toSlot()
+  var wallTime = self.getCurrentBeaconTime()
+  let (afterGenesis, wallSlot) = wallTime.toSlot()
 
   logScope:
     attestation = shortLog(attestation)
@@ -276,7 +276,7 @@ proc attestationValidator*(
       self.batchCrypto, attestation, wallTime, subnet_id, checkSignature)
   return if v.isOk():
     # Due to async validation the wallSlot here might have changed
-    wallSlot = self.getCurrentBeaconTime().slotOrZero()
+    wallTime = self.getCurrentBeaconTime()
 
     let (attester_index, sig) = v.get()
 
@@ -284,7 +284,7 @@ proc attestationValidator*(
 
     trace "Attestation validated"
     self.attestationPool[].addAttestation(
-      attestation, [attester_index], sig, wallSlot)
+      attestation, [attester_index], sig, wallTime)
 
     beacon_attestations_received.inc()
     beacon_attestation_delay.observe(delay.toFloatSeconds())
@@ -332,7 +332,8 @@ proc aggregateValidator*(
     trace "Aggregate validated"
 
     self.attestationPool[].addAttestation(
-      signedAggregateAndProof.message.aggregate, attesting_indices, sig, wallSlot)
+      signedAggregateAndProof.message.aggregate, attesting_indices, sig,
+      wallTime)
 
     beacon_aggregates_received.inc()
     beacon_aggregate_delay.observe(delay.toFloatSeconds())

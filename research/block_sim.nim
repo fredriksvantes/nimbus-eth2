@@ -136,7 +136,7 @@ cli do(slots = SLOTS_PER_EPOCH * 6,
                 data: data,
                 aggregation_bits: aggregation_bits,
                 signature: sig.toValidatorSig()
-              ), [validatorIdx], sig, data.slot)
+              ), [validatorIdx], sig, data.slot.toBeaconTime)
 
   proc handleSyncCommitteeActions(slot: Slot) =
     type
@@ -308,7 +308,7 @@ cli do(slots = SLOTS_PER_EPOCH * 6,
             epochRef: EpochRef):
           # Callback add to fork choice if valid
           attPool.addForkChoice(
-            epochRef, blckRef, signedBlock.message, blckRef.slot)
+            epochRef, blckRef, signedBlock.message, blckRef.slot.toBeaconTime)
 
       blck() = added[]
       dag.updateHead(added[], quarantine[])
@@ -328,7 +328,7 @@ cli do(slots = SLOTS_PER_EPOCH * 6,
             epochRef: EpochRef):
           # Callback add to fork choice if valid
           attPool.addForkChoice(
-            epochRef, blckRef, signedBlock.message, blckRef.slot)
+            epochRef, blckRef, signedBlock.message, blckRef.slot.toBeaconTime)
 
       blck() = added[]
       dag.updateHead(added[], quarantine[])
@@ -348,7 +348,7 @@ cli do(slots = SLOTS_PER_EPOCH * 6,
             epochRef: EpochRef):
           # Callback add to fork choice if valid
           attPool.addForkChoice(
-            epochRef, blckRef, signedBlock.message, blckRef.slot)
+            epochRef, blckRef, signedBlock.message, blckRef.slot.toBeaconTime)
 
       blck() = added[]
       dag.updateHead(added[], quarantine[])

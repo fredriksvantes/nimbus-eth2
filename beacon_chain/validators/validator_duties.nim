@@ -551,8 +551,7 @@ proc proposeBlock(node: BeaconNode,
 
       # storeBlock puts the block in the chaindag, and if accepted, takes care
       # of side effects such as event api notification
-      newBlockRef = node.blockProcessor[].storeBlock(
-        signedBlock, wallTime.slotOrZero())
+      newBlockRef = node.blockProcessor[].storeBlock(signedBlock, wallTime)
 
     if newBlockRef.isErr:
       warn "Unable to add proposed block to block pool",
@@ -1217,8 +1216,7 @@ proc sendBeaconBlock*(node: BeaconNode, forked: ForkedSignedBeaconBlock
     head = node.dag.head
     wallTime = node.beaconClock.now()
     accepted = withBlck(forked):
-      let newBlockRef = node.blockProcessor[].storeBlock(
-        blck, wallTime.slotOrZero())
+      let newBlockRef = node.blockProcessor[].storeBlock(blck, wallTime)
 
       # The boolean we return tells the caller whether the block was integrated
       # into the chain

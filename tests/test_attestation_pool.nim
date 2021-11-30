@@ -21,6 +21,7 @@ import
     block_quarantine, blockchain_dag, block_clearance, attestation_pool],
   ../beacon_chain/spec/datatypes/phase0,
   ../beacon_chain/spec/[beaconstate, helpers, state_transition, validator],
+  ../beacon_chain/beacon_clock,
   # Test utilities
   ./testutil, ./testdbutil, ./testblockutil
 
@@ -81,7 +82,7 @@ suite "Attestation pool processing" & preset():
 
     pool[].addAttestation(
       attestation, @[bc0[0]], attestation.loadSig,
-      attestation.data.slot)
+      attestation.data.slot.toBeaconTime)
 
     check:
       # Added attestation, should get it back
@@ -133,7 +134,7 @@ suite "Attestation pool processing" & preset():
       pool[].getAttestationsForBlock(state.data, cache) == []
 
     pool[].addAttestation(
-      att1, @[bc1[0]], att1.loadSig, att1.data.slot)
+      att1, @[bc1[0]], att1.loadSig, att1.data.slot.toBeaconTime)
 
     check:
       # but new ones should go in
@@ -142,7 +143,7 @@ suite "Attestation pool processing" & preset():
     let
       att2 = makeAttestation(state[].data, root1, bc1[1], cache)
     pool[].addAttestation(
-      att2, @[bc1[1]], att2.loadSig, att2.data.slot)
+      att2, @[bc1[1]], att2.loadSig, att2.data.slot.toBeaconTime)
 
     let
       combined = pool[].getAttestationsForBlock(state.data, cache)
@@ -153,7 +154,8 @@ suite "Attestation pool processing" & preset():
       combined[0].aggregation_bits.countOnes() == 2
 
     pool[].addAttestation(
-      combined[0], @[bc1[1], bc1[0]], combined[0].loadSig, combined[0].data.slot)
+      combined[0], @[bc1[1], bc1[0]], combined[0].loadSig,
+      combined[0].data.slot.toBeaconTime)
 
     check:
       # readding the combined attestation shouldn't have an effect
@@ -163,7 +165,7 @@ suite "Attestation pool processing" & preset():
       # Someone votes for a different root
       att3 = makeAttestation(state[].data, Eth2Digest(), bc1[2], cache)
     pool[].addAttestation(
-      att3, @[bc1[2]], att3.loadSig, att3.data.slot)
+      att3, @[bc1[2]], att3.loadSig, att3.data.slot.toBeaconTime)
 
     check:
       # We should now get both attestations for the block, but the aggregate
@@ -178,7 +180,7 @@ suite "Attestation pool processing" & preset():
       # Someone votes for a different root
       att4 = makeAttestation(state[].data, Eth2Digest(), bc1[2], cache)
     pool[].addAttestation(
-      att4, @[bc1[2]], att3.loadSig, att3.data.slot)
+      att4, @[bc1[2]], att3.loadSig, att3.data.slot.toBeaconTime)
 
   test "Working with aggregates" & preset():
     let
@@ -197,8 +199,10 @@ suite "Attestation pool processing" & preset():
     att0.combine(att2)
     att1.combine(att2)
 
-    pool[].addAttestation(att0, @[bc0[0], bc0[2]], att0.loadSig, att0.data.slot)
-    pool[].addAttestation(att1, @[bc0[1], bc0[2]], att1.loadSig, att1.data.slot)
+    pool[].addAttestation(
+      att0, @[bc0[0], bc0[2]], att0.loadSig, att0.data.slot.toBeaconTime)
+    pool[].addAttestation(
+      att1, @[bc0[1], bc0[2]], att1.loadSig, att1.data.slot.toBeaconTime)
 
     check:
       process_slots(
@@ -212,7 +216,8 @@ suite "Attestation pool processing" & preset():
       pool[].getAggregatedAttestation(1.Slot, 0.CommitteeIndex).isSome()
 
     # Add in attestation 3 - both aggregates should now have it added
-    pool[].addAttestation(att3, @[bc0[3]], att3.loadSig, att3.data.slot)
+    pool[].addAttestation(
+      att3, @[bc0[3]], att3.loadSig, att3.data.slot.toBeaconTime)
 
     block:
       let attestations = pool[].getAttestationsForBlock(state.data, cache)
@@ -224,7 +229,8 @@ suite "Attestation pool processing" & preset():
 
     # Add in attestation 0 as single - attestation 1 is now a superset of the
     # aggregates in the pool, so everything else should be removed
-    pool[].addAttestation(att0x, @[bc0[0]], att0x.loadSig, att0x.data.slot)
+    pool[].addAttestation(
+      att0x, @[bc0[0]], att0x.loadSig, att0x.data.slot.toBeaconTime)
 
     block:
       let attestations = pool[].getAttestationsForBlock(state.data, cache)
@@ -245,7 +251,8 @@ suite "Attestation pool processing" & preset():
       for j in 0..<bc0.len():
         root.data[8..<16] = toBytesBE(j.uint64)
         var att = makeAttestation(state[].data, root, bc0[j], cache)
-        pool[].addAttestation(att, @[bc0[j]], att.loadSig, att.data.slot)
+        pool[].addAttestation(
+          att, @[bc0[j]], att.loadSig, att.data.slot.toBeaconTime)
         inc attestations
 
       check:
@@ -282,9 +289,11 @@ suite "Attestation pool processing" & preset():
 
     # test reverse order
     pool[].addAttestation(
-      attestation1, @[bc1[0]], attestation1.loadSig, attestation1.data.slot)
+      attestation1, @[bc1[0]], attestation1.loadSig,
+      attestation1.data.slot.toBeaconTime)
     pool[].addAttestation(
-      attestation0, @[bc0[0]], attestation0.loadSig, attestation0.data.slot)
+      attestation0, @[bc0[0]], attestation0.loadSig,
+      attestation0.data.slot.toBeaconTime)
 
     discard process_slots(
       defaultRuntimeConfig, state.data,
@@ -307,9 +316,11 @@ suite "Attestation pool processing" & preset():
         makeAttestation(state[].data, state.blck.root, bc0[1], cache)
 
     pool[].addAttestation(
-      attestation0, @[bc0[0]], attestation0.loadSig, attestation0.data.slot)
+      attestation0, @[bc0[0]], attestation0.loadSig,
+      attestation0.data.slot.toBeaconTime)
     pool[].addAttestation(
-      attestation1, @[bc0[1]], attestation1.loadSig, attestation1.data.slot)
+      attestation1, @[bc0[1]], attestation1.loadSig,
+      attestation1.data.slot.toBeaconTime)
 
     check:
       process_slots(
@@ -336,9 +347,11 @@ suite "Attestation pool processing" & preset():
     attestation0.combine(attestation1)
 
     pool[].addAttestation(
-      attestation0, @[bc0[0]], attestation0.loadSig, attestation0.data.slot)
+      attestation0, @[bc0[0]], attestation0.loadSig,
+      attestation0.data.slot.toBeaconTime)
     pool[].addAttestation(
-      attestation1, @[bc0[1]], attestation1.loadSig, attestation1.data.slot)
+      attestation1, @[bc0[1]], attestation1.loadSig,
+      attestation1.data.slot.toBeaconTime)
 
     check:
       process_slots(
@@ -364,9 +377,11 @@ suite "Attestation pool processing" & preset():
     attestation0.combine(attestation1)
 
     pool[].addAttestation(
-      attestation1, @[bc0[1]], attestation1.loadSig, attestation1.data.slot)
+      attestation1, @[bc0[1]], attestation1.loadSig,
+      attestation1.data.slot.toBeaconTime)
     pool[].addAttestation(
-      attestation0, @[bc0[0]], attestation0.loadSig, attestation0.data.slot)
+      attestation0, @[bc0[0]], attestation0.loadSig,
+      attestation0.data.slot.toBeaconTime)
 
     check:
       process_slots(
@@ -386,9 +401,10 @@ suite "Attestation pool processing" & preset():
           blckRef: BlockRef, signedBlock: phase0.TrustedSignedBeaconBlock,
           epochRef: EpochRef):
         # Callback add to fork choice if valid
-        pool[].addForkChoice(epochRef, blckRef, signedBlock.message, blckRef.slot)
+        pool[].addForkChoice(
+          epochRef, blckRef, signedBlock.message, blckRef.slot.toBeaconTime)
 
-    let head = pool[].selectHead(b1Add[].slot)
+    let head = pool[].selectHead(b1Add[].slot.toBeaconTime)
 
     check:
       head == b1Add[]
@@ -399,9 +415,10 @@ suite "Attestation pool processing" & preset():
           blckRef: BlockRef, signedBlock: phase0.TrustedSignedBeaconBlock,
           epochRef: EpochRef):
         # Callback add to fork choice if valid
-        pool[].addForkChoice(epochRef, blckRef, signedBlock.message, blckRef.slot)
+        pool[].addForkChoice(
+          epochRef, blckRef, signedBlock.message, blckRef.slot.toBeaconTime)
 
-    let head2 = pool[].selectHead(b2Add[].slot)
+    let head2 = pool[].selectHead(b2Add[].slot.toBeaconTime)
 
     check:
       head2 == b2Add[]
@@ -414,9 +431,10 @@ suite "Attestation pool processing" & preset():
           blckRef: BlockRef, signedBlock: phase0.TrustedSignedBeaconBlock,
           epochRef: EpochRef):
         # Callback add to fork choice if valid
-        pool[].addForkChoice(epochRef, blckRef, signedBlock.message, blckRef.slot)
+        pool[].addForkChoice(
+          epochRef, blckRef, signedBlock.message, blckRef.slot.toBeaconTime)
 
-    let head = pool[].selectHead(b10Add[].slot)
+    let head = pool[].selectHead(b10Add[].slot.toBeaconTime)
 
     check:
       head == b10Add[]
@@ -429,7 +447,8 @@ suite "Attestation pool processing" & preset():
           blckRef: BlockRef, signedBlock: phase0.TrustedSignedBeaconBlock,
           epochRef: EpochRef):
         # Callback add to fork choice if valid
-        pool[].addForkChoice(epochRef, blckRef, signedBlock.message, blckRef.slot)
+        pool[].addForkChoice(
+          epochRef, blckRef, signedBlock.message, blckRef.slot.toBeaconTime)
 
       bc1 = get_beacon_committee(
         state[].data, getStateField(state.data, slot) - 1, 1.CommitteeIndex,
@@ -437,9 +456,10 @@ suite "Attestation pool processing" & preset():
       attestation0 = makeAttestation(state[].data, b10.root, bc1[0], cache)
 
     pool[].addAttestation(
-      attestation0, @[bc1[0]], attestation0.loadSig, attestation0.data.slot)
+      attestation0, @[bc1[0]], attestation0.loadSig,
+      attestation0.data.slot.toBeaconTime)
 
-    let head2 = pool[].selectHead(b10Add[].slot)
+    let head2 = pool[].selectHead(b10Add[].slot.toBeaconTime)
 
     check:
       # Single vote for b10 and no votes for b11
@@ -449,9 +469,10 @@ suite "Attestation pool processing" & preset():
       attestation1 = makeAttestation(state[].data, b11.root, bc1[1], cache)
       attestation2 = makeAttestation(state[].data, b11.root, bc1[2], cache)
     pool[].addAttestation(
-      attestation1, @[bc1[1]], attestation1.loadSig, attestation1.data.slot)
+      attestation1, @[bc1[1]], attestation1.loadSig,
+      attestation1.data.slot.toBeaconTime)
 
-    let head3 = pool[].selectHead(b10Add[].slot)
+    let head3 = pool[].selectHead(b10Add[].slot.toBeaconTime)
     let bigger = if b11.root.data < b10.root.data: b10Add else: b11Add
 
     check:
@@ -459,9 +480,10 @@ suite "Attestation pool processing" & preset():
       head3 == bigger[]
 
     pool[].addAttestation(
-      attestation2, @[bc1[2]], attestation2.loadSig, attestation2.data.slot)
+      attestation2, @[bc1[2]], attestation2.loadSig,
+      attestation2.data.slot.toBeaconTime)
 
-    let head4 = pool[].selectHead(b11Add[].slot)
+    let head4 = pool[].selectHead(b11Add[].slot.toBeaconTime)
 
     check:
       # Two votes for b11
@@ -475,9 +497,10 @@ suite "Attestation pool processing" & preset():
           blckRef: BlockRef, signedBlock: phase0.TrustedSignedBeaconBlock,
           epochRef: EpochRef):
         # Callback add to fork choice if valid
-        pool[].addForkChoice(epochRef, blckRef, signedBlock.message, blckRef.slot)
+        pool[].addForkChoice(epochRef, blckRef, signedBlock.message,
+        blckRef.slot.toBeaconTime)
 
-    let head = pool[].selectHead(b10Add[].slot)
+    let head = pool[].selectHead(b10Add[].slot.toBeaconTime)
 
     check:
       head == b10Add[]
@@ -489,7 +512,8 @@ suite "Attestation pool processing" & preset():
           blckRef: BlockRef, signedBlock: phase0.TrustedSignedBeaconBlock,
           epochRef: EpochRef):
         # Callback add to fork choice if valid
-        pool[].addForkChoice(epochRef, blckRef, signedBlock.message, blckRef.slot)
+        pool[].addForkChoice(
+          epochRef, blckRef, signedBlock.message, blckRef.slot.toBeaconTime)
 
     doAssert: b10Add_clone.error == BlockError.Duplicate
 
@@ -504,9 +528,10 @@ suite "Attestation pool processing" & preset():
           blckRef: BlockRef, signedBlock: phase0.TrustedSignedBeaconBlock,
           epochRef: EpochRef):
         # Callback add to fork choice if valid
-        pool[].addForkChoice(epochRef, blckRef, signedBlock.message, blckRef.slot)
+        pool[].addForkChoice(
+          epochRef, blckRef, signedBlock.message, blckRef.slot.toBeaconTime)
 
-    let head = pool[].selectHead(b10Add[].slot)
+    let head = pool[].selectHead(b10Add[].slot.toBeaconTime)
 
     doAssert: head == b10Add[]
 
@@ -529,9 +554,10 @@ suite "Attestation pool processing" & preset():
             blckRef: BlockRef, signedBlock: phase0.TrustedSignedBeaconBlock,
             epochRef: EpochRef):
           # Callback add to fork choice if valid
-          pool[].addForkChoice(epochRef, blckRef, signedBlock.message, blckRef.slot)
+          pool[].addForkChoice(
+            epochRef, blckRef, signedBlock.message, blckRef.slot.toBeaconTime)
 
-        let head = pool[].selectHead(blockRef[].slot)
+        let head = pool[].selectHead(blockRef[].slot.toBeaconTime)
         doAssert: head == blockRef[]
         dag.updateHead(head, quarantine[])
         pruneAtFinalization(dag, pool[])
@@ -571,6 +597,7 @@ suite "Attestation pool processing" & preset():
           blckRef: BlockRef, signedBlock: phase0.TrustedSignedBeaconBlock,
           epochRef: EpochRef):
         # Callback add to fork choice if valid
-        pool[].addForkChoice(epochRef, blckRef, signedBlock.message, blckRef.slot)
+        pool[].addForkChoice(
+          epochRef, blckRef, signedBlock.message, blckRef.slot.toBeaconTime)
 
     doAssert: b10Add_clone.error == BlockError.Duplicate

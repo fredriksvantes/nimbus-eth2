@@ -159,7 +159,7 @@ proc dumpBlock*[T](
 proc storeBlock*(
     self: var BlockProcessor,
     signedBlock: ForkySignedBeaconBlock,
-    wallSlot: Slot, queueTick: Moment = Moment.now(),
+    wallTime: BeaconTime, queueTick: Moment = Moment.now(),
     validationDur = Duration()): Result[BlockRef, BlockError] =
   let
     attestationPool = self.consensusManager.attestationPool
@@ -179,7 +179,7 @@ proc storeBlock*(
       blckRef: BlockRef, trustedBlock: Trusted, epochRef: EpochRef):
     # Callback add to fork choice if valid
     attestationPool[].addForkChoice(
-      epochRef, blckRef, trustedBlock.message, wallSlot)
+      epochRef, blckRef, trustedBlock.message, wallTime)
 
   self.dumpBlock(signedBlock, blck)
 
@@ -238,7 +238,7 @@ proc processBlock(self: var BlockProcessor, entry: BlockEntry) =
 
   let
      res = withBlck(entry.blck):
-       self.storeBlock(blck, wallSlot, entry.queueTick, entry.validationDur)
+       self.storeBlock(blck, wallTime, entry.queueTick, entry.validationDur)
 
   if res.isOk() or res.error() == BlockError.Duplicate:
     # Duplicate blocks are ok from a sync point of view, so we mark
