@@ -134,8 +134,7 @@ func process_attestation_queue(self: var ForkChoice) {.gcsafe.}
 proc update_time(self: var ForkChoice, dag: ChainDAGRef, time: BeaconTime):
     FcResult[void] =
   if time > self.checkpoints.time:
-    while time > self.checkpoints.time:
-      ? on_tick(self.checkpoints, dag, time)
+    ? on_tick(self.checkpoints, dag, time)
 
     self.process_attestation_queue() # Only run if time changed!
 
