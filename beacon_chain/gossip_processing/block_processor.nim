@@ -200,7 +200,7 @@ proc storeBlock*(
   let storeBlockTick = Moment.now()
 
   # Eagerly update head: the incoming block "should" get selected
-  self.consensusManager[].updateHead(wallSlot)
+  self.consensusManager[].updateHead(wallTime.slotOrZero)
 
   let
     updateHeadTick = Moment.now()
