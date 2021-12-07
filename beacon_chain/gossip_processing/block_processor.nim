@@ -259,7 +259,7 @@ proc runQueueProcessingLoop*(self: ref BlockProcessor) {.async.} =
     discard await idleAsync().withTimeout(idleTimeout)
 
     let
-      blck = await self[].blocksQueue.popFirst()
+      blck = await self[].blockQueue.popFirst()
       hasExecutionPayload = blck.blck.kind >= BeaconBlockFork.Merge
       executionPayloadStatus =
         if  hasExecutionPayload and

@@ -457,9 +457,10 @@ proc get_execution_payload(
     # TODO split these conversions out and enable round-trip testing
     merge.ExecutionPayload(
       parent_hash: rpcExecutionPayload.parentHash.asEth2Digest,
-      coinbase: ExecutionAddress(data: rpcExecutionPayload.coinbase.distinctBase),
+      feeRecipient:
+        ExecutionAddress(data: rpcExecutionPayload.feeRecipient.distinctBase),
       state_root: rpcExecutionPayload.stateRoot.asEth2Digest,
-      receipt_root: rpcExecutionPayload.receiptRoot.asEth2Digest,
+      receipts_root: rpcExecutionPayload.receiptsRoot.asEth2Digest,
       logs_bloom: BloomLogs(data: rpcExecutionPayload.logsBloom.distinctBase),
       random: rpcExecutionPayload.random.asEth2Digest,
       block_number: rpcExecutionPayload.blockNumber.uint64,

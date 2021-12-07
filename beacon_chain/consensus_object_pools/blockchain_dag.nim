@@ -1558,9 +1558,9 @@ proc newExecutionPayload*(
     TypedTransaction(t.distinctBase)
   let rpcExecutionPayload = (ref engine_api.ExecutionPayloadV1)(
     parentHash: executionPayload.parent_hash.asBlockHash,
-    coinbase: Address(executionPayload.coinbase.data),
+    feeRecipient: Address(executionPayload.feeRecipient.data),
     stateRoot: executionPayload.state_root.asBlockHash,
-    receiptRoot: executionPayload.receipt_root.asBlockHash,
+    receiptsRoot: executionPayload.receipts_root.asBlockHash,
     logsBloom: FixedBytes[256](executionPayload.logs_bloom.data),
     random: executionPayload.random.asBlockHash,
     blockNumber: Quantity(executionPayload.block_number),

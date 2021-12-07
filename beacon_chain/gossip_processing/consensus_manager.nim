@@ -10,7 +10,7 @@
 import
   chronicles, chronos,
   ../spec/datatypes/base,
-  ../consensus_object_pools/[blockchain_dag, block_quarantine, attestation_pool]
+  ../consensus_object_pools/[blockchain_dag, block_quarantine, attestation_pool],
 
   # not ideal
   ../eth1/eth1_monitor
@@ -41,7 +41,7 @@ type
 proc new*(T: type ConsensusManager,
           dag: ChainDAGRef,
           attestationPool: ref AttestationPool,
-          quarantine: ref Quarantine
+          quarantine: ref Quarantine,
           web3Provider: Web3DataProviderRef
          ): ref ConsensusManager =
   (ref ConsensusManager)(
