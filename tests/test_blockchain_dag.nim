@@ -50,7 +50,8 @@ suite "Block pool processing" & preset():
   setup:
     var
       db = makeTestDB(SLOTS_PER_EPOCH)
-      dag = init(ChainDAGRef, defaultRuntimeConfig, db, {})
+      validatorMonitor = newClone(ValidatorMonitor.init())
+      dag = init(ChainDAGRef, defaultRuntimeConfig, db, validatorMonitor, {})
       verifier = BatchVerifier(rng: keys.newRng(), taskpool: Taskpool.new())
       quarantine = Quarantine.init()
       state = newClone(dag.headState.data)
@@ -159,6 +160,15 @@ suite "Block pool processing" & preset():
       dag.getBlockRange(Slot(3), 2, blocks.toOpenArray(0, 1)) == 2
       blocks[2..<2].len == 0
 
+  test "Adding the same block twice returns a Duplicate error" & preset():
+    let
+      b10 = dag.addRawBlock(verifier, b1, nilPhase0Callback)
+      b11 = dag.addRawBlock(verifier, b1, nilPhase0Callback)
+
+    check:
+      b11.error == BlockError.Duplicate
+      not b10[].isNil
+
   test "updateHead updates head and headState" & preset():
     let
       b1Add = dag.addRawBlock(verifier, b1, nilPhase0Callback)
@@ -227,7 +237,8 @@ suite "Block pool altair processing" & preset():
 
     var
       db = makeTestDB(SLOTS_PER_EPOCH)
-      dag = init(ChainDAGRef, cfg, db, {})
+      validatorMonitor = newClone(ValidatorMonitor.init())
+      dag = init(ChainDAGRef, cfg, db, validatorMonitor, {})
       verifier = BatchVerifier(rng: keys.newRng(), taskpool: Taskpool.new())
       quarantine = Quarantine.init()
       state = newClone(dag.headState.data)
@@ -301,7 +312,8 @@ suite "chain DAG finalization tests" & preset():
   setup:
     var
       db = makeTestDB(SLOTS_PER_EPOCH)
-      dag = init(ChainDAGRef, defaultRuntimeConfig, db, {})
+      validatorMonitor = newClone(ValidatorMonitor.init())
+      dag = init(ChainDAGRef, defaultRuntimeConfig, db, validatorMonitor, {})
       verifier = BatchVerifier(rng: keys.newRng(), taskpool: Taskpool.new())
       quarantine = Quarantine.init()
       cache = StateCache()
@@ -394,7 +406,8 @@ suite "chain DAG finalization tests" & preset():
         db.getStateRoot(finalizedCheckpoint.blck.root, finalizedCheckpoint.slot).isSome
 
     let
-      dag2 = init(ChainDAGRef, defaultRuntimeConfig, db, {})
+      validatorMonitor2 = newClone(ValidatorMonitor.init())
+      dag2 = init(ChainDAGRef, defaultRuntimeConfig, db, validatorMonitor2, {})
 
     # check that the state reloaded from database resembles what we had before
     check:
@@ -434,7 +447,8 @@ suite "chain DAG finalization tests" & preset():
     check: added.isOk()
 
     var
-      dag2 = init(ChainDAGRef, defaultRuntimeConfig, db, {})
+      validatorMonitor2 = newClone(ValidatorMonitor.init())
+      dag2 = init(ChainDAGRef, defaultRuntimeConfig, db, validatorMonitor2, {})
 
     # check that we can apply the block after the orphaning
     let added2 = dag2.addRawBlock(verifier, blck, nilPhase0Callback)
@@ -482,7 +496,8 @@ suite "chain DAG finalization tests" & preset():
         cur = cur.parent
 
     let
-      dag2 = init(ChainDAGRef, defaultRuntimeConfig, db, {})
+      validatorMonitor2 = newClone(ValidatorMonitor.init())
+      dag2 = init(ChainDAGRef, defaultRuntimeConfig, db, validatorMonitor2, {})
 
     # check that the state reloaded from database resembles what we had before
     check:
@@ -522,7 +537,8 @@ suite "Old database versions" & preset():
     db.putGenesisBlock(genBlock.root)
 
     var
-      dag = init(ChainDAGRef, defaultRuntimeConfig, db, {})
+      validatorMonitor = newClone(ValidatorMonitor.init())
+      dag = init(ChainDAGRef, defaultRuntimeConfig, db,validatorMonitor, {})
       state = newClone(dag.headState.data)
       cache = StateCache()
       att0 = makeFullAttestations(state[], dag.tail.root, 0.Slot, cache)
@@ -543,7 +559,8 @@ suite "Diverging hardforks":
 
     var
       db = makeTestDB(SLOTS_PER_EPOCH)
-      dag = init(ChainDAGRef, phase0RuntimeConfig, db, {})
+      validatorMonitor = newClone(ValidatorMonitor.init())
+      dag = init(ChainDAGRef, phase0RuntimeConfig, db, validatorMonitor, {})
       verifier = BatchVerifier(rng: keys.newRng(), taskpool: Taskpool.new())
       quarantine = newClone(Quarantine.init())
       cache = StateCache()
@@ -566,7 +583,10 @@ suite "Diverging hardforks":
     check b1Add.isOk()
     dag.updateHead(b1Add[], quarantine[])
 
-    var dagAltair = init(ChainDAGRef, altairRuntimeConfig, db, {})
+    let validatorMonitorAltair = newClone(ValidatorMonitor.init())
+
+    var dagAltair = init(
+      ChainDAGRef, altairRuntimeConfig, db, validatorMonitorAltair, {})
     discard AttestationPool.init(dagAltair, quarantine)
 
   test "Non-tail block in common":
@@ -595,5 +615,8 @@ suite "Diverging hardforks":
     check b2Add.isOk()
     dag.updateHead(b2Add[], quarantine[])
 
-    var dagAltair = init(ChainDAGRef, altairRuntimeConfig, db, {})
+    let validatorMonitor = newClone(ValidatorMonitor.init())
+
+    var dagAltair = init(
+      ChainDAGRef, altairRuntimeConfig, db, validatorMonitor, {})
     discard AttestationPool.init(dagAltair, quarantine)
