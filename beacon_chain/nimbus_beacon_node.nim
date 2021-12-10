@@ -478,9 +478,7 @@ proc init*(T: type BeaconNode,
     eventBus: eventBus,
     requestManager: RequestManager.init(network, blockVerifier),
     syncManager: syncManager,
-    actionTracker: ActionTracker.init(
-      rng,
-      config.subscribeAllSubnets),
+    actionTracker: ActionTracker.init(rng, config.subscribeAllSubnets),
     processor: processor,
     blockProcessor: blockProcessor,
     consensusManager: consensusManager,
@@ -983,10 +981,6 @@ proc onSlotStart(
 
   if node.config.verifyFinalization:
     verifyFinalization(node, wallSlot)
-
-  let
-    prevHead = node.dag.head
-    prevFinalizing = node.dag.finalizedHead.blck
 
   node.consensusManager[].updateHead(wallSlot)
 

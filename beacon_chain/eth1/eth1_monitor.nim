@@ -184,16 +184,6 @@ func depositCountU64(s: DepositContractState): uint64 =
 
   uint64.fromBytesBE s.deposit_count[24..31]
 
-func pruneOldBlocks(store: var Eth1RecentBlocks) =
-  if store.latestBlockHeader.isSome:
-    var toDelete: seq[BlockHash]
-    for hash, blk in store.blocksByHash:
-      if blk.number + 20 < store.latestBlockHeader.get.number.uint64:
-        toDelete.add hash
-
-    for hash in toDelete:
-      store.blocksByHash.del(hash)
-
 when hasGenesisDetection:
   import spec/[beaconstate, signatures]
 
