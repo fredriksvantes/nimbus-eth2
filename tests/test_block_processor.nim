@@ -44,7 +44,7 @@ suite "Block processor" & preset():
 
   test "Reverse order block add & get" & preset():
     let missing = processor[].storeBlock(
-      b2, b2.message.slot)
+      b2, b2.message.slot.toBeaconTime)
     check: missing.error == BlockError.MissingParent
 
     check:
@@ -54,7 +54,7 @@ suite "Block processor" & preset():
 
     let
       status = processor[].storeBlock(
-        b1, b2.message.slot)
+        b1, b2.message.slot.toBeaconTime)
       b1Get = dag.get(b1.root)
 
     check:
