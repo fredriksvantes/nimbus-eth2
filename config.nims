@@ -79,10 +79,10 @@ if defined(windows):
 # build more viable on an overall broader range of hardware.
 #
 # Apple's Clang can't handle "-march=native" on M1: https://github.com/status-im/nimbus-eth2/issues/2758
-if true or defined(disableMarchNative) or (defined(macosx) and defined(arm64)):
-  if defined(i386) or defined(amd64):
-    switch("passC", "-mssse3")
-    switch("passL", "-mssse3")
+if defined(disableMarchNative) or (defined(macosx) and defined(arm64)):
+  if defined(amd64):
+    switch("passC", "-march=broadwell")
+    switch("passL", "-march=broadwell")
 else:
   switch("passC", "-march=native")
   switch("passL", "-march=native")
