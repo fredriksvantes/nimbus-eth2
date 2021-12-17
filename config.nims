@@ -84,8 +84,12 @@ if defined(disableMarchNative) or (defined(macosx) and defined(arm64)):
     switch("passC", "-mssse3")
     switch("passL", "-mssse3")
 else:
-  switch("passC", "-march=broadwell")
-  switch("passL", "-march=broadwell")
+  if not defined(macosx):
+    switch("passC", "-march=broadwell")
+    switch("passL", "-march=broadwell")
+  else:
+    switch("passC", "-march=native")
+    switch("passL", "-march=native")
   if defined(windows):
     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65782
     # ("-fno-asynchronous-unwind-tables" breaks Nim's exception raising, sometimes)
