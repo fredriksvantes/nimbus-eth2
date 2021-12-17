@@ -6,13 +6,14 @@
 # it once, upload it to Docker Hub and make sure it's being pulled regularly so
 # it's not deleted after 6 months of inactivity.
 
-FROM ubuntu:20.04
+FROM ubuntu:latest
 
 SHELL ["/bin/bash", "-c"]
 
 ENV DEBIAN_FRONTEND=noninteractive TZ="Etc/UTC"
 RUN \
  apt-get -qq update \
+ && apt-get -y upgrade \
  && apt-get -qq -y install git gnupg software-properties-common lsb &>/dev/null \
  && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 86B72ED9 \
  && add-apt-repository "deb [arch=amd64] https://pkg.mxe.cc/repos/apt $(lsb_release -sc) main" \
